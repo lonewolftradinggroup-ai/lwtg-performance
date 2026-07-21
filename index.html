@@ -166,9 +166,27 @@ function render(trades) {
   const mits = closed.filter(t => t.strategy === 'MITS').length;
   const qcs = closed.filter(t => t.strategy === 'QC Signals').length;
 
-  // Session boundary = 17:00 CT (DLL resets here). Session bridges midnight.
-  // Current session start: today at 17:00 CT if CT hour >= 17, else yesterday 17:00 CT.
+  // === THIS WEEK: Sun open to now (matches Google Sheet "This Week" panel) ===
   const nowCT = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+  // Week starts Sunday 00:00 CT
+  const weekStart = new Date(nowCT);
+  weekStart.setDate(nowCT.getDate() - nowCT.getDay()); // back to Sunday
+  weekStart.setHours(0, 0, 0, 0);
+  // t.date = 'YYYY-MM-DD', t.time = 'HH:MM:SS' stored in CT per sheet timezone
+  function tradeCTDate(t) {
+    return new Date(t.date + 'T' + (t.time || '00:00:00'));
+  }
+  const weekTrades = closed.filter(t => tradeCTDate(t) >= weekStart);
+  const weekPnl = weekTrades.reduce((s, t) => s + (t.pnl_usd || 0), 0);
+  const weekWins = weekTrades.filter(t => t.result === 'TP').length;
+  const weekCount = weekTrades.length;
+  const weekWR = weekCount > 0 ? Math.round(weekWins / weekCount * 100) : null;
+  const weekContracts = weekTrades.reduce((s, t) => s + (t.contracts || 1), 0);
+  const weekFees = weekContracts * 1.90;
+  const weekNet = weekPnl - weekFees;
+  const weekLabel = weekStart.toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' }) + ' – now';
+
+  // === DLL SESSION: 17:00 CT boundary (for DLL gate card only) ===
   const sessionStart = new Date(nowCT);
   if (nowCT.getHours() >= 17) {
     sessionStart.setHours(17, 0, 0, 0);
@@ -176,19 +194,8 @@ function render(trades) {
     sessionStart.setDate(sessionStart.getDate() - 1);
     sessionStart.setHours(17, 0, 0, 0);
   }
-  // t.date = 'YYYY-MM-DD', t.time = 'HH:MM:SS' stored in CT per sheet timezone
-  function tradeCTDate(t) {
-    return new Date(t.date + 'T' + (t.time || '00:00:00'));
-  }
   const sessionTrades = closed.filter(t => tradeCTDate(t) >= sessionStart);
-  const sessionLabel = sessionStart.toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' }) + ' 5pm – now';
   const sessionPnl = sessionTrades.reduce((s, t) => s + (t.pnl_usd || 0), 0);
-  const sessionWins = sessionTrades.filter(t => t.result === 'TP').length;
-  const sessionCount = sessionTrades.length;
-  const sessionWR = sessionCount > 0 ? Math.round(sessionWins / sessionCount * 100) : null;
-  const sessionContracts = sessionTrades.reduce((s, t) => s + (t.contracts || 1), 0);
-  const sessionFees = sessionContracts * 1.90;
-  const sessionNet = sessionPnl - sessionFees;
   const DLL_GATE = -750;
   const dllRemaining = DLL_GATE - sessionPnl;
   const dllClass = sessionPnl <= -500 ? 'dll-danger' : sessionPnl <= -300 ? 'dll-warn' : '';
@@ -241,32 +248,32 @@ function render(trades) {
 
   document.getElementById('content').innerHTML = `
     <div class="today-strip">
-      <div class="today-label"><span class="today-dot"></span> Session — ${sessionLabel}</div>
+      <div class="today-label"><span class="today-dot"></span> This Week — ${weekLabel}</div>
       <div class="today-grid">
         <div class="today-card">
-          <div class="today-card-label">P&L Gross</div>
-          <div class="today-card-value" style="color:${sessionPnl >= 0 ? 'var(--green)' : 'var(--red)'}">${sessionCount > 0 ? fmt(Math.round(sessionPnl)) : '—'}</div>
+          <div class="today-card-label">P&amp;L Gross</div>
+          <div class="today-card-value" style="color:${weekPnl >= 0 ? 'var(--green)' : 'var(--red)'}">${weekCount > 0 ? fmt(Math.round(weekPnl)) : '—'}</div>
           <div class="today-card-sub">pre-commission</div>
         </div>
         <div class="today-card">
           <div class="today-card-label">Net After Fees</div>
-          <div class="today-card-value" style="color:${sessionNet >= 0 ? 'var(--green)' : 'var(--red)'}">${sessionCount > 0 ? fmt(Math.round(sessionNet)) : '—'}</div>
+          <div class="today-card-value" style="color:${weekNet >= 0 ? 'var(--green)' : 'var(--red)'}">${weekCount > 0 ? fmt(Math.round(weekNet)) : '—'}</div>
           <div class="today-card-sub">~$1.90/contract RT</div>
         </div>
         <div class="today-card">
           <div class="today-card-label">Win Rate</div>
-          <div class="today-card-value">${sessionWR !== null ? sessionWR + '%' : '—'}</div>
-          <div class="today-card-sub">${sessionCount > 0 ? sessionWins + 'W · ' + (sessionCount - sessionWins) + 'L' : 'no trades yet'}</div>
+          <div class="today-card-value">${weekWR !== null ? weekWR + '%' : '—'}</div>
+          <div class="today-card-sub">${weekCount > 0 ? weekWins + 'W · ' + (weekCount - weekWins) + 'L' : 'no trades yet'}</div>
         </div>
         <div class="today-card">
           <div class="today-card-label">Trades</div>
-          <div class="today-card-value">${sessionCount}</div>
-          <div class="today-card-sub">MITS ${sessionTrades.filter(t=>t.strategy==='MITS').length} · QCS ${sessionTrades.filter(t=>t.strategy==='QC Signals').length}</div>
+          <div class="today-card-value">${weekCount}</div>
+          <div class="today-card-sub">MITS ${weekTrades.filter(t=>t.strategy==='MITS').length} · QCS ${weekTrades.filter(t=>t.strategy==='QC Signals').length}</div>
         </div>
         <div class="today-card ${dllClass}">
-          <div class="today-card-label">Session P&L</div>
-          <div class="today-card-value" style="color:${dllColor}">${sessionCount > 0 ? fmt(Math.round(sessionPnl)) : '—'}</div>
-          <div class="today-card-sub">${sessionCount > 0 ? fmt(Math.round(Math.abs(dllRemaining))) + ' to -$750 block' : 'DLL gate: -$750'}</div>
+          <div class="today-card-label">Session P&amp;L</div>
+          <div class="today-card-value" style="color:${dllColor}">${sessionTrades.length > 0 ? fmt(Math.round(sessionPnl)) : '—'}</div>
+          <div class="today-card-sub">${sessionTrades.length > 0 ? fmt(Math.round(Math.abs(dllRemaining))) + ' to -$750 block' : 'DLL gate: -$750'}</div>
         </div>
       </div>
     </div>
