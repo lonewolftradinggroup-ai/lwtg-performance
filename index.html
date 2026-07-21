@@ -34,7 +34,7 @@
       --text-3: #898781;
     }
   }
-  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; }
   .page { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem; }
 
   /* Header */
@@ -52,17 +52,17 @@
   .kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 2rem; }
   @media (max-width: 600px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
   .kpi { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; }
-  .kpi-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
-  .kpi-value { font-size: 24px; font-weight: 600; line-height: 1; }
-  .kpi-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+  .kpi-label { font-size: 12px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
+  .kpi-value { font-size: 28px; font-weight: 600; line-height: 1; }
+  .kpi-sub { font-size: 12px; color: var(--text-3); margin-top: 4px; }
 
   /* Section */
-  .sec { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .07em; margin: 2rem 0 .875rem; }
+  .sec { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .07em; margin: 2rem 0 .875rem; border-left: 3px solid var(--blue); padding-left: 8px; }
 
   /* Chart */
   .chart-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
   .chart-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1rem; }
-  .chart-title { font-size: 14px; font-weight: 500; }
+  .chart-title { font-size: 15px; font-weight: 600; }
   .chart-range { font-size: 12px; color: var(--text-3); }
   .chart-wrap { position: relative; width: 100%; height: 200px; }
 
@@ -70,24 +70,24 @@
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.5rem; }
   @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
   .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.1rem 1.25rem; }
-  .card-title { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .875rem; }
+  .card-title { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .875rem; border-left: 3px solid var(--blue); padding-left: 8px; }
 
   /* Bar rows */
   .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .bar-row:last-child { margin-bottom: 0; }
-  .bar-lbl { font-size: 12px; color: var(--text-2); width: 58px; flex-shrink: 0; }
-  .bar-track { flex: 1; height: 5px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+  .bar-lbl { font-size: 13px; color: var(--text-2); width: 58px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 3px; }
-  .bar-val { font-size: 12px; font-weight: 500; min-width: 80px; text-align: right; }
+  .bar-val { font-size: 13px; font-weight: 500; min-width: 80px; text-align: right; }
 
   /* Regime */
   .regime-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
   .regime-row { display: flex; align-items: center; justify-content: space-between; padding: .75rem 0; border-bottom: 0.5px solid var(--border); }
   .regime-row:last-of-type { border-bottom: none; }
-  .regime-name { font-size: 13px; font-weight: 500; }
+  .regime-name { font-size: 14px; font-weight: 600; }
   .regime-desc { font-size: 11px; color: var(--text-3); margin-top: 2px; }
   .regime-right { text-align: right; }
-  .regime-wr { font-size: 15px; font-weight: 600; }
+  .regime-wr { font-size: 20px; font-weight: 700; }
   .regime-detail { font-size: 11px; color: var(--text-2); margin-top: 2px; }
   .pill { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 10px; margin-left: 6px; font-weight: 500; vertical-align: middle; }
   .pill-g { background: rgba(27,175,122,0.12); color: var(--green); }
@@ -100,14 +100,14 @@
 
   /* Today strip */
   .today-strip { margin-bottom: 2rem; }
-  .today-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: .6rem; display: flex; align-items: center; gap: 8px; }
+  .today-label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .07em; margin-bottom: .6rem; display: flex; align-items: center; gap: 8px; }
   .today-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; }
   .today-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
   @media (max-width: 600px) { .today-grid { grid-template-columns: repeat(3, 1fr); } }
-  .today-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: .75rem 1rem; }
-  .today-card-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
-  .today-card-value { font-size: 18px; font-weight: 600; line-height: 1; }
-  .today-card-sub { font-size: 10px; color: var(--text-3); margin-top: 3px; }
+  .today-card { background: var(--surface); border: 0.5px solid var(--border); border-left: 2px solid var(--blue); border-radius: var(--radius); padding: .75rem 1rem; }
+  .today-card-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .today-card-value { font-size: 22px; font-weight: 600; line-height: 1; }
+  .today-card-sub { font-size: 11px; color: var(--text-3); margin-top: 3px; }
   .today-card.dll-warn { border-color: var(--amber); }
   .today-card.dll-danger { border-color: var(--red); }
 
@@ -279,7 +279,7 @@ function render(trades) {
     </div>
 
     <div class="kpi-grid">
-      <div class="kpi"><div class="kpi-label">Net P&L</div><div class="kpi-value" style="color:var(--green)">${fmt(Math.round(netPnl))}</div><div class="kpi-sub">gross, pre-commission</div></div>
+      <div class="kpi"><div class="kpi-label">Net P&L</div><div class="kpi-value" style="color:${netPnl >= 0 ? 'var(--green)' : 'var(--red)'}">${fmt(Math.round(netPnl))}</div><div class="kpi-sub">gross, pre-commission</div></div>
       <div class="kpi"><div class="kpi-label">Win rate</div><div class="kpi-value">${(wr*100).toFixed(1)}%</div><div class="kpi-sub">${wins}W · ${total-wins}L</div></div>
       <div class="kpi"><div class="kpi-label">Trades</div><div class="kpi-value">${total}</div><div class="kpi-sub">MITS ${mits} · QCS ${qcs}</div></div>
       <div class="kpi"><div class="kpi-label">Profit factor</div><div class="kpi-value">${pf}</div><div class="kpi-sub">gross wins ÷ losses</div></div>
@@ -344,7 +344,7 @@ function render(trades) {
       datasets: [{
         data: equityData,
         borderColor: '#2a78d6',
-        backgroundColor: isDark ? 'rgba(42,120,214,0.06)' : 'rgba(42,120,214,0.07)',
+        backgroundColor: isDark ? 'rgba(42,120,214,0.15)' : 'rgba(42,120,214,0.12)',
         borderWidth: 2,
         fill: true,
         tension: 0.35,
