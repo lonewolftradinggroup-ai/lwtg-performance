@@ -166,21 +166,33 @@ function render(trades) {
   const mits = closed.filter(t => t.strategy === 'MITS').length;
   const qcs = closed.filter(t => t.strategy === 'QC Signals').length;
 
-  // Today in CT with auto DST — Intl.DateTimeFormat handles CDT/CST automatically
-  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }); // YYYY-MM-DD
-  const todayTrades = closed.filter(t => t.date === todayStr);
-  const todayPnl = todayTrades.reduce((s, t) => s + (t.pnl_usd || 0), 0);
-  const todayWins = todayTrades.filter(t => t.result === 'TP').length;
-  const todayCount = todayTrades.length;
-  const todayWR = todayCount > 0 ? Math.round(todayWins / todayCount * 100) : null;
-  const todayContracts = todayTrades.reduce((s, t) => s + (t.contracts || 1), 0);
-  const todayFees = todayContracts * 1.90;
-  const todayNet = todayPnl - todayFees;
+  // Session boundary = 17:00 CT (DLL resets here). Session bridges midnight.
+  // Current session start: today at 17:00 CT if CT hour >= 17, else yesterday 17:00 CT.
+  const nowCT = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+  const sessionStart = new Date(nowCT);
+  if (nowCT.getHours() >= 17) {
+    sessionStart.setHours(17, 0, 0, 0);
+  } else {
+    sessionStart.setDate(sessionStart.getDate() - 1);
+    sessionStart.setHours(17, 0, 0, 0);
+  }
+  // t.date = 'YYYY-MM-DD', t.time = 'HH:MM:SS' stored in CT per sheet timezone
+  function tradeCTDate(t) {
+    return new Date(t.date + 'T' + (t.time || '00:00:00'));
+  }
+  const sessionTrades = closed.filter(t => tradeCTDate(t) >= sessionStart);
+  const sessionLabel = sessionStart.toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' }) + ' 5pm – now';
+  const sessionPnl = sessionTrades.reduce((s, t) => s + (t.pnl_usd || 0), 0);
+  const sessionWins = sessionTrades.filter(t => t.result === 'TP').length;
+  const sessionCount = sessionTrades.length;
+  const sessionWR = sessionCount > 0 ? Math.round(sessionWins / sessionCount * 100) : null;
+  const sessionContracts = sessionTrades.reduce((s, t) => s + (t.contracts || 1), 0);
+  const sessionFees = sessionContracts * 1.90;
+  const sessionNet = sessionPnl - sessionFees;
   const DLL_GATE = -750;
-  const dllRemaining = DLL_GATE - todayPnl;
-  const dllPct = Math.min(100, Math.round((todayPnl / DLL_GATE) * 100));
-  const dllClass = todayPnl <= -500 ? 'dll-danger' : todayPnl <= -300 ? 'dll-warn' : '';
-  const dllColor = todayPnl <= -500 ? 'var(--red)' : todayPnl <= -300 ? 'var(--amber)' : 'var(--green)';
+  const dllRemaining = DLL_GATE - sessionPnl;
+  const dllClass = sessionPnl <= -500 ? 'dll-danger' : sessionPnl <= -300 ? 'dll-warn' : '';
+  const dllColor = sessionPnl <= -500 ? 'var(--red)' : sessionPnl <= -300 ? 'var(--amber)' : 'var(--green)';
 
   const dates = [...new Set(closed.map(t => t.date))].sort();
   const firstDate = dates[0];
@@ -229,32 +241,32 @@ function render(trades) {
 
   document.getElementById('content').innerHTML = `
     <div class="today-strip">
-      <div class="today-label"><span class="today-dot"></span> Today — ${todayStr}</div>
+      <div class="today-label"><span class="today-dot"></span> Session — ${sessionLabel}</div>
       <div class="today-grid">
         <div class="today-card">
           <div class="today-card-label">P&L Gross</div>
-          <div class="today-card-value" style="color:${todayPnl >= 0 ? 'var(--green)' : 'var(--red)'}">${todayCount > 0 ? fmt(Math.round(todayPnl)) : '—'}</div>
+          <div class="today-card-value" style="color:${sessionPnl >= 0 ? 'var(--green)' : 'var(--red)'}">${sessionCount > 0 ? fmt(Math.round(sessionPnl)) : '—'}</div>
           <div class="today-card-sub">pre-commission</div>
         </div>
         <div class="today-card">
           <div class="today-card-label">Net After Fees</div>
-          <div class="today-card-value" style="color:${todayNet >= 0 ? 'var(--green)' : 'var(--red)'}">${todayCount > 0 ? fmt(Math.round(todayNet)) : '—'}</div>
+          <div class="today-card-value" style="color:${sessionNet >= 0 ? 'var(--green)' : 'var(--red)'}">${sessionCount > 0 ? fmt(Math.round(sessionNet)) : '—'}</div>
           <div class="today-card-sub">~$1.90/contract RT</div>
         </div>
         <div class="today-card">
           <div class="today-card-label">Win Rate</div>
-          <div class="today-card-value">${todayWR !== null ? todayWR + '%' : '—'}</div>
-          <div class="today-card-sub">${todayCount > 0 ? todayWins + 'W · ' + (todayCount - todayWins) + 'L' : 'no trades yet'}</div>
+          <div class="today-card-value">${sessionWR !== null ? sessionWR + '%' : '—'}</div>
+          <div class="today-card-sub">${sessionCount > 0 ? sessionWins + 'W · ' + (sessionCount - sessionWins) + 'L' : 'no trades yet'}</div>
         </div>
         <div class="today-card">
           <div class="today-card-label">Trades</div>
-          <div class="today-card-value">${todayCount}</div>
-          <div class="today-card-sub">MITS ${todayTrades.filter(t=>t.strategy==='MITS').length} · QCS ${todayTrades.filter(t=>t.strategy==='QC Signals').length}</div>
+          <div class="today-card-value">${sessionCount}</div>
+          <div class="today-card-sub">MITS ${sessionTrades.filter(t=>t.strategy==='MITS').length} · QCS ${sessionTrades.filter(t=>t.strategy==='QC Signals').length}</div>
         </div>
         <div class="today-card ${dllClass}">
           <div class="today-card-label">Session P&L</div>
-          <div class="today-card-value" style="color:${dllColor}">${todayCount > 0 ? fmt(Math.round(todayPnl)) : '—'}</div>
-          <div class="today-card-sub">${todayCount > 0 ? fmt(Math.round(Math.abs(dllRemaining))) + ' to -$750 block' : 'DLL gate: -$750'}</div>
+          <div class="today-card-value" style="color:${dllColor}">${sessionCount > 0 ? fmt(Math.round(sessionPnl)) : '—'}</div>
+          <div class="today-card-sub">${sessionCount > 0 ? fmt(Math.round(Math.abs(dllRemaining))) + ' to -$750 block' : 'DLL gate: -$750'}</div>
         </div>
       </div>
     </div>
