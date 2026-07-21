@@ -98,6 +98,19 @@
   .disclaimer { border-top: 0.5px solid var(--border); padding-top: 1.5rem; margin-top: 2rem; font-size: 11px; color: var(--text-3); line-height: 1.7; }
   .disclaimer a { color: var(--blue); text-decoration: none; }
 
+  /* Today strip */
+  .today-strip { margin-bottom: 2rem; }
+  .today-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: .6rem; display: flex; align-items: center; gap: 8px; }
+  .today-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; }
+  .today-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+  @media (max-width: 600px) { .today-grid { grid-template-columns: repeat(3, 1fr); } }
+  .today-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: .75rem 1rem; }
+  .today-card-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .today-card-value { font-size: 18px; font-weight: 600; line-height: 1; }
+  .today-card-sub { font-size: 10px; color: var(--text-3); margin-top: 3px; }
+  .today-card.dll-warn { border-color: var(--amber); }
+  .today-card.dll-danger { border-color: var(--red); }
+
   /* Loading */
   .loading { text-align: center; padding: 3rem; color: var(--text-3); font-size: 13px; }
   .error { text-align: center; padding: 3rem; color: var(--red); font-size: 13px; }
@@ -110,7 +123,7 @@
     <div class="header-top">
       <div>
         <div class="badge"><span class="dot"></span> Live funded account</div>
-        <h1>Lone Wolf Trading Group — Live Performance v2.0</h1>
+        <h1>LWTG MITS</h1>
         <div class="sub">Multi-Instrument Trading System · Apex Trader Funding · Micro futures</div>
       </div>
       <a class="gh-btn" href="https://github.com/lonewolftradinggroup-ai/lwtg-mits-system" target="_blank">
@@ -152,6 +165,22 @@ function render(trades) {
   const pf = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : '∞';
   const mits = closed.filter(t => t.strategy === 'MITS').length;
   const qcs = closed.filter(t => t.strategy === 'QC Signals').length;
+
+  // Today in CT with auto DST — Intl.DateTimeFormat handles CDT/CST automatically
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }); // YYYY-MM-DD
+  const todayTrades = closed.filter(t => t.date === todayStr);
+  const todayPnl = todayTrades.reduce((s, t) => s + (t.pnl_usd || 0), 0);
+  const todayWins = todayTrades.filter(t => t.result === 'TP').length;
+  const todayCount = todayTrades.length;
+  const todayWR = todayCount > 0 ? Math.round(todayWins / todayCount * 100) : null;
+  const todayContracts = todayTrades.reduce((s, t) => s + (t.contracts || 1), 0);
+  const todayFees = todayContracts * 1.90;
+  const todayNet = todayPnl - todayFees;
+  const DLL_GATE = -750;
+  const dllRemaining = DLL_GATE - todayPnl;
+  const dllPct = Math.min(100, Math.round((todayPnl / DLL_GATE) * 100));
+  const dllClass = todayPnl <= -500 ? 'dll-danger' : todayPnl <= -300 ? 'dll-warn' : '';
+  const dllColor = todayPnl <= -500 ? 'var(--red)' : todayPnl <= -300 ? 'var(--amber)' : 'var(--green)';
 
   const dates = [...new Set(closed.map(t => t.date))].sort();
   const firstDate = dates[0];
@@ -199,6 +228,37 @@ function render(trades) {
   };
 
   document.getElementById('content').innerHTML = `
+    <div class="today-strip">
+      <div class="today-label"><span class="today-dot"></span> Today — ${todayStr}</div>
+      <div class="today-grid">
+        <div class="today-card">
+          <div class="today-card-label">P&L Gross</div>
+          <div class="today-card-value" style="color:${todayPnl >= 0 ? 'var(--green)' : 'var(--red)'}">${todayCount > 0 ? fmt(Math.round(todayPnl)) : '—'}</div>
+          <div class="today-card-sub">pre-commission</div>
+        </div>
+        <div class="today-card">
+          <div class="today-card-label">Net After Fees</div>
+          <div class="today-card-value" style="color:${todayNet >= 0 ? 'var(--green)' : 'var(--red)'}">${todayCount > 0 ? fmt(Math.round(todayNet)) : '—'}</div>
+          <div class="today-card-sub">~$1.90/contract RT</div>
+        </div>
+        <div class="today-card">
+          <div class="today-card-label">Win Rate</div>
+          <div class="today-card-value">${todayWR !== null ? todayWR + '%' : '—'}</div>
+          <div class="today-card-sub">${todayCount > 0 ? todayWins + 'W · ' + (todayCount - todayWins) + 'L' : 'no trades yet'}</div>
+        </div>
+        <div class="today-card">
+          <div class="today-card-label">Trades</div>
+          <div class="today-card-value">${todayCount}</div>
+          <div class="today-card-sub">MITS ${todayTrades.filter(t=>t.strategy==='MITS').length} · QCS ${todayTrades.filter(t=>t.strategy==='QC Signals').length}</div>
+        </div>
+        <div class="today-card ${dllClass}">
+          <div class="today-card-label">Session P&L</div>
+          <div class="today-card-value" style="color:${dllColor}">${todayCount > 0 ? fmt(Math.round(todayPnl)) : '—'}</div>
+          <div class="today-card-sub">${todayCount > 0 ? fmt(Math.round(Math.abs(dllRemaining))) + ' to -$750 block' : 'DLL gate: -$750'}</div>
+        </div>
+      </div>
+    </div>
+
     <div class="kpi-grid">
       <div class="kpi"><div class="kpi-label">Net P&L</div><div class="kpi-value" style="color:var(--green)">${fmt(Math.round(netPnl))}</div><div class="kpi-sub">gross, pre-commission</div></div>
       <div class="kpi"><div class="kpi-label">Win rate</div><div class="kpi-value">${(wr*100).toFixed(1)}%</div><div class="kpi-sub">${wins}W · ${total-wins}L</div></div>
