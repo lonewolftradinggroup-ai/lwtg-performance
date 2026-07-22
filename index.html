@@ -165,6 +165,7 @@ function render(trades) {
   const pf = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : '∞';
   const mits = closed.filter(t => t.strategy === 'MITS').length;
   const qcs = closed.filter(t => t.strategy === 'QC Signals').length;
+  const qct = closed.filter(t => t.strategy === 'QC Trend').length;
 
   // === THIS WEEK: Sun open to now (matches Google Sheet "This Week" panel) ===
   const nowCT = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
@@ -226,6 +227,14 @@ function render(trades) {
     if (t.result === 'TP') byPreset[k].w++; else byPreset[k].l++;
   });
 
+  const byQct = {};
+  closed.filter(t => t.strategy === 'QC Trend').forEach(t => {
+    const k = t.timeframe || 'Other';
+    if (!byQct[k]) byQct[k] = {w:0,l:0,pnl:0};
+    byQct[k].pnl += (t.pnl_usd || 0);
+    if (t.result === 'TP') byQct[k].w++; else byQct[k].l++;
+  });
+
   const withRegime = closed.filter(t => t.strategy === 'MITS' && t.regime_score !== null && t.regime_score !== undefined && t.regime_score !== 0 && t.direction);
   const aligned = withRegime.filter(t => (t.regime_score > 0 && t.direction === 'long') || (t.regime_score < 0 && t.direction === 'short'));
   const counter = withRegime.filter(t => (t.regime_score > 0 && t.direction === 'short') || (t.regime_score < 0 && t.direction === 'long'));
@@ -239,6 +248,8 @@ function render(trades) {
 
   const presetOrder = Object.entries(byPreset).sort((a,b) => b[1].pnl - a[1].pnl);
   const maxPresetPnl = Math.max(...presetOrder.map(p => Math.abs(p[1].pnl)));
+  const qctOrder = Object.entries(byQct).sort((a,b) => b[1].pnl - a[1].pnl);
+  const maxQctPnl = Math.max(...qctOrder.map(p => Math.abs(p[1].pnl)), 1);
 
   const formatDate = d => {
     const [y,m,day] = d.split('-');
@@ -268,7 +279,7 @@ function render(trades) {
         <div class="today-card">
           <div class="today-card-label">Trades</div>
           <div class="today-card-value">${weekCount}</div>
-          <div class="today-card-sub">MITS ${weekTrades.filter(t=>t.strategy==='MITS').length} · QCS ${weekTrades.filter(t=>t.strategy==='QC Signals').length}</div>
+          <div class="today-card-sub">MITS ${weekTrades.filter(t=>t.strategy==='MITS').length} · QCS ${weekTrades.filter(t=>t.strategy==='QC Signals').length} · QCT ${weekTrades.filter(t=>t.strategy==='QC Trend').length}</div>
         </div>
         <div class="today-card ${dllClass}">
           <div class="today-card-label">Session P&amp;L</div>
@@ -281,7 +292,7 @@ function render(trades) {
     <div class="kpi-grid">
       <div class="kpi"><div class="kpi-label">Net P&L</div><div class="kpi-value" style="color:${netPnl >= 0 ? 'var(--green)' : 'var(--red)'}">${fmt(Math.round(netPnl))}</div><div class="kpi-sub">gross, pre-commission</div></div>
       <div class="kpi"><div class="kpi-label">Win rate</div><div class="kpi-value">${(wr*100).toFixed(1)}%</div><div class="kpi-sub">${wins}W · ${total-wins}L</div></div>
-      <div class="kpi"><div class="kpi-label">Trades</div><div class="kpi-value">${total}</div><div class="kpi-sub">MITS ${mits} · QCS ${qcs}</div></div>
+      <div class="kpi"><div class="kpi-label">Trades</div><div class="kpi-value">${total}</div><div class="kpi-sub">MITS ${mits} · QCS ${qcs} · QCT ${qct}</div></div>
       <div class="kpi"><div class="kpi-label">Profit factor</div><div class="kpi-value">${pf}</div><div class="kpi-sub">gross wins ÷ losses</div></div>
     </div>
 
@@ -293,7 +304,7 @@ function render(trades) {
       <div class="chart-wrap"><canvas id="eqChart" role="img" aria-label="Line chart of cumulative P&L over the trading period. Starts positive, dips on Jun 24, then rises to peak before ending at ${fmt(Math.round(netPnl))}.">Cumulative P&L trajectory from ${formatDate(firstDate)} to ${formatDate(lastDate)}.</canvas></div>
     </div>
 
-    <div class="two-col">
+    <div class="${qctOrder.length > 0 ? 'three-col' : 'two-col'}">
       <div class="card">
         <div class="card-title">MITS by instrument</div>
         ${instOrder.filter(s => byInst[s]).map(s => {
@@ -312,6 +323,16 @@ function render(trades) {
           return `<div class="bar-row"><div class="bar-lbl" style="width:68px">${k}</div><div class="bar-track"><div class="bar-fill" style="width:${pct2}%;background:${col}"></div></div><div class="bar-val" style="color:${col}">${w2}% · ${fmt(Math.round(d.pnl))}</div></div>`;
         }).join('')}
       </div>
+      ${qctOrder.length > 0 ? `
+      <div class="card">
+        <div class="card-title" style="border-left-color:#f59e0b">QC Trend by preset</div>
+        ${qctOrder.map(([k, d]) => {
+          const t2 = d.w + d.l; const w2 = t2 > 0 ? Math.round(d.w/t2*100) : 0;
+          const pct2 = maxQctPnl > 0 ? Math.max(8, Math.round(Math.abs(d.pnl)/maxQctPnl*100)) : 8;
+          const col = d.pnl >= 0 ? '#f59e0b' : 'var(--red)';
+          return '<div class="bar-row"><div class="bar-lbl" style="width:68px">' + k + '</div><div class="bar-track"><div class="bar-fill" style="width:' + pct2 + '%;background:' + col + '"></div></div><div class="bar-val" style="color:' + col + '">' + w2 + '% · ' + fmt(Math.round(d.pnl)) + '</div></div>';
+        }).join('')}
+      </div>` : ''}
     </div>
 
     <div class="regime-card">
